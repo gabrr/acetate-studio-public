@@ -6,7 +6,7 @@ Acetate turns PDF and CSV financial statements into structured, categorized tran
 
 The broader goal is to make personal finance easier to explore through both visual interfaces and natural-language questions.
 
-[Explore Acetate Studio](https://studio.acetate.me) · [About the creator](https://github.com/gabrr)
+[Explore Acetate Studio](https://studio.acetate.me) · [Creator’s website](https://gabrr.app)
 
 > This repository is a public showcase of an independently developed product. It shares the interface, technology choices, and selected engineering decisions. Application source code and proprietary classification logic remain private.
 
@@ -41,21 +41,15 @@ I built Acetate across the product interface, application backend, AI workflow, 
 - **Authentication and data access:** Google sign-in through Supabase Auth, backend token verification, and user-scoped access to jobs and results.
 - **Quality and observability:** automated checks for financial values, event streaming, and recovery behavior, alongside AI tracing and evaluation.
 
-## Architecture at a glance
+## Architecture
 
-Studio is the browser interface; a separate Python service owns statement processing and classification. Background execution separates long-running AI work from the interactive experience.
+### Transaction classification
 
-```mermaid
-flowchart LR
-    U[Studio web app] --> A[Authenticated API]
-    A --> J[Background jobs]
-    J --> P[Document extraction and classification]
-    P --> D[(Results and job state)]
-    D --> A
-    A -->|Live progress and results| U
-```
+An illustrative flow from statement extraction to classification, including the research path for uncertain transactions. Example data and confidence values are simulated.
 
-This overview intentionally stays at the system boundary level. Internal prompts, classification criteria, and detailed workflow implementation are private.
+[![Interactive Acetate transaction classification flow](docs/classification.png)](https://gabrr.github.io/acetate-studio-public/classification.html)
+
+*Click the diagram to play the flow, inspect example data, and switch between fitted and enlarged views.*
 
 ## Selected technology stack
 
@@ -74,8 +68,4 @@ This overview intentionally stays at the system boundary level. Internal prompts
 
 Acetate is under active development. Statement import, processing, transaction review, and export form the current workflow. Natural-language Q&A is part of the product direction; the conversation agent is not connected in the current Studio experience.
 
-## About
-
-Built by [Gabriel Welzel](https://github.com/gabrr).
-
-Acetate brings together my interests in product design, full-stack engineering, and applied AI. For conversations about the project, engineering roles, or collaboration, visit my [GitHub profile](https://github.com/gabrr).
+Built by Gabriel Welzel · [gabrr.app](https://gabrr.app)
