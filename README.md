@@ -1,5 +1,7 @@
 # Acetate Studio
 
+[![Live demo](assets/live-demo.svg)](https://studio.acetate.me) [![In development](assets/development.svg)](#the-product) [![Interactive architecture](assets/architecture.svg)](https://gabrr.github.io/acetate-studio-public/classification.html)
+
 **A modern, AI-native personal finance application.**
 
 Upload PDF or CSV statements. Acetate categorizes your transactions so you can explore your finances through visual interfaces and natural language.
@@ -50,10 +52,10 @@ An illustrative flow from statement extraction to classification, including the 
 
 | Layer | Stack |
 | --- | --- |
-| Interface | Next.js · React · TypeScript · Mantine · Tailwind CSS |
-| Backend & data | Python · FastAPI · PostgreSQL · Supabase Auth |
-| AI | LangGraph · Gemini · TypeSafe · Docling · LangSmith |
-| Infrastructure | Cloud Run · Cloud Tasks · Cloud Storage · Docker |
+| Interface | <img src="assets/icons/nextdotjs.svg" width="16" height="16" alt=""> Next.js &nbsp; <img src="assets/icons/react.svg" width="16" height="16" alt=""> React &nbsp; <img src="assets/icons/typescript.svg" width="16" height="16" alt=""> TypeScript &nbsp; <img src="assets/icons/mantine.svg" width="16" height="16" alt=""> Mantine &nbsp; <img src="assets/icons/tailwindcss.svg" width="16" height="16" alt=""> Tailwind CSS |
+| Backend & data | <img src="assets/icons/python.svg" width="16" height="16" alt=""> Python &nbsp; <img src="assets/icons/fastapi.svg" width="16" height="16" alt=""> FastAPI &nbsp; <img src="assets/icons/postgresql.svg" width="16" height="16" alt=""> PostgreSQL &nbsp; <img src="assets/icons/supabase.svg" width="16" height="16" alt=""> Supabase Auth |
+| AI | <img src="assets/icons/langgraph.svg" width="16" height="16" alt=""> LangGraph &nbsp; <img src="assets/icons/googlegemini.svg" width="16" height="16" alt=""> Gemini &nbsp; TypeSafe &nbsp; Docling &nbsp; LangSmith |
+| Infrastructure | <img src="assets/icons/googlecloud.svg" width="16" height="16" alt=""> Google Cloud (Run · Tasks · Storage) &nbsp; <img src="assets/icons/docker.svg" width="16" height="16" alt=""> Docker |
 
 Public product showcase. Application source code is private.
 
