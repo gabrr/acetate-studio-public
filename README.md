@@ -22,11 +22,11 @@ Checks: `npm test`, `npm run typecheck`, `npm run build -- --webpack`.
 
 New Chat
 
-![New Chat workspace](Docs/screenshots/new-chat.png)
+![New Chat workspace](./new-chat.png)
 
 Home — illustrative charts
 
-![Home dashboard](Docs/screenshots/home.png)
+![Home dashboard](./home.png)
 
 ## Documentation
 
