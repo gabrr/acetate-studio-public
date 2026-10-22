@@ -1,45 +1,40 @@
 # Acetate Studio
 
-**From financial statements to transactions you can understand.**
+**A modern, AI-native personal finance application.**
 
-Acetate turns PDF and CSV financial statements into structured, categorized transactions. Studio brings that workflow into a single workspace: upload a statement, follow its progress, review the results, and export your data.
+Upload PDF or CSV statements. Acetate categorizes your transactions so you can explore your finances through visual interfaces and natural language.
 
-The broader goal is to make personal finance easier to explore through both visual interfaces and natural-language questions.
-
-[Explore Acetate Studio](https://studio.acetate.me) · [Creator’s website](https://gabrr.app)
-
-> This repository is a public showcase of an independently developed product. It shares the interface, technology choices, and selected engineering decisions. Application source code and proprietary classification logic remain private.
+[Explore Studio](https://studio.acetate.me) · [gabrr.app](https://gabrr.app)
 
 ## The product
 
-Financial statements contain useful information, but turning different document formats into a consistent view of your finances takes work. Acetate combines document processing, AI-assisted extraction, and transaction classification to reduce that manual effort while keeping results available for review.
+Manual categorization takes time. Acetate’s AI workflow achieves **94% accuracy** when categorizing transactions.
 
-- **Import statements:** process PDF and CSV files through a shared workflow.
-- **Follow processing live:** see progress as a statement moves through extraction and classification.
-- **Review transactions:** inspect results, search transactions, and adjust classifications.
-- **Organize financial activity:** distinguish fixed expenses, variable spending, installments, and money movements.
-- **Export results:** take reviewed transactions into other tools as CSV.
+- **Import statements:** PDF and CSV.
+- **Live progress:** click a file to follow each processing step.
+- **Review transactions:** correct uncertain classifications yourself.
+- **Financial activity:** fixed, variable, installments, and money movements.
+- **Export:** download transactions as CSV.
+- **Rich charts:** explore your finances visually. Dashboard previews below use illustrative data.
+
+**Coming next:** learning from your corrections, natural-language Q&A, and food, transport, housing, subscriptions, and custom categories. Later: iMessage, Telegram, and WhatsApp.
 
 ### Statement workspace
 
 ![Acetate Studio statement workspace](./new-chat.png)
 
-### Dashboard direction
+### Charts · preview
 
-The Home view explores how financial summaries can fit into the workspace. Charts shown here are illustrative.
-
-![Acetate Studio Home dashboard with illustrative charts](./home.png)
+![Acetate Studio dashboard with illustrative charts](./home.png)
 
 ## Engineering highlights
 
-I built Acetate across the product interface, application backend, AI workflow, and cloud infrastructure. Selected areas of work include:
+Designed and built across the interface, AI workflow, backend, and cloud infrastructure.
 
-- **Product and frontend engineering:** a domain-oriented React application with reusable components, light and dark themes, and clear separation between interface state, server data, and browser persistence.
-- **Applied AI:** document extraction into structured data followed by transaction classification, with confidence information and a reference-dataset evaluation workflow.
-- **Asynchronous systems:** durable background jobs, retry handling, saved processing checkpoints, and live progress delivery through Server-Sent Events. Accepted jobs continue when the browser disconnects.
-- **State and recovery:** restoring processing progress after a refresh, retaining review edits locally, and preventing duplicate submissions during recovery.
-- **Authentication and data access:** Google sign-in through Supabase Auth, backend token verification, and user-scoped access to jobs and results.
-- **Quality and observability:** automated checks for financial values, event streaming, and recovery behavior, alongside AI tracing and evaluation.
+- **Applied AI:** extraction, classification, confidence scoring, and evaluations.
+- **Reliable processing:** background jobs, retries, and checkpoints.
+- **Live experience:** streamed progress and recovery after refresh.
+- **Data access:** authenticated, user-scoped jobs and results.
 
 ## Architecture
 
@@ -51,21 +46,15 @@ An illustrative flow from statement extraction to classification, including the 
 
 *Click the diagram to play the flow, inspect example data, and switch between fitted and enlarged views.*
 
-## Selected technology stack
+## Technology
 
-| Area | Technologies |
+| Layer | Stack |
 | --- | --- |
-| Web application | Next.js, React, TypeScript |
-| Interface and styling | Mantine, Tailwind CSS |
-| Client data and persistence | TanStack Query, IndexedDB |
-| API and workflow | Python, FastAPI, LangGraph |
-| Document processing and AI | Docling, Google Gemini, TypeSafe |
-| Authentication and database | Supabase Auth, PostgreSQL, SQLAlchemy, Alembic |
-| Cloud infrastructure | Google Cloud Run, Cloud Tasks, Cloud Storage, Docker |
-| AI tracing and evaluation | LangSmith |
+| Interface | Next.js · React · TypeScript · Mantine · Tailwind CSS |
+| Backend & data | Python · FastAPI · PostgreSQL · Supabase Auth |
+| AI | LangGraph · Gemini · TypeSafe · Docling · LangSmith |
+| Infrastructure | Cloud Run · Cloud Tasks · Cloud Storage · Docker |
 
-## Current stage
-
-Acetate is under active development. Statement import, processing, transaction review, and export form the current workflow. Natural-language Q&A is part of the product direction; the conversation agent is not connected in the current Studio experience.
+Public product showcase. Application source code is private.
 
 Built by Gabriel Welzel · [gabrr.app](https://gabrr.app)
