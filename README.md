@@ -6,7 +6,7 @@
 
 Upload PDF or CSV statements. Acetate categorizes your transactions so you can explore your finances through visual interfaces and natural language.
 
-[Explore Studio](https://studio.acetate.me) · Author: [Gabriel Velzo](https://gabrr.app)
+[Explore Studio](https://studio.acetate.me) · Author: [Gabriel Welzel](https://gabrr.app)
 
 ## The product
 
