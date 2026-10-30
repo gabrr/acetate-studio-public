@@ -42,11 +42,11 @@ Designed and built across the interface, AI workflow, backend, and cloud infrast
 
 ### Transaction classification
 
-An illustrative flow from statement extraction to classification, including the research path for uncertain transactions. Example data and confidence values are simulated.
+An illustrative classification flow, with proposed private correction memory and shared web knowledge. Example data and confidence values are simulated.
 
 [![Interactive Acetate transaction classification flow](docs/classification.png)](https://gabrr.github.io/acetate-studio-public/classification.html)
 
-*Click the diagram to play the flow, inspect example data, and switch between fitted and enlarged views.*
+*Open the diagram to play flows, inspect example data, pan, and zoom.*
 
 ## Technology
 
