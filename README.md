@@ -51,7 +51,7 @@ Designed and built across the interface, AI workflow, backend, and cloud infrast
 
 Classification, private corrections, shared web knowledge and the proposed LangSmith review/evaluation loop. Example data is simulated; proposed stages are not claims of shipped features.
 
-[Open the complete interactive architecture](https://gabrr.github.io/acetate-studio-public/classification-flow.html#all)
+[![Complete Acetate workflow, private and shared memory, and quality loop](docs/classification.png)](https://gabrr.github.io/acetate-studio-public/classification-flow.html#all)
 
 [All diagrams](https://gabrr.github.io/acetate-studio-public/) · [Authentication](https://gabrr.github.io/acetate-studio-public/authentication-flow.html) · [RAG study guide](https://gabrr.github.io/acetate-studio-public/rag-study.html)
 
