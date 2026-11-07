@@ -21,20 +21,32 @@ Manual categorization takes time. Acetate’s AI workflow achieves **94% accurac
 
 **Coming next:** learning from your corrections, natural-language Q&A, and food, transport, housing, subscriptions, and custom categories. Later: iMessage, Telegram, and WhatsApp.
 
-### Statement workspace
+### Entry workspace
 
-![Acetate Studio statement workspace](./new-chat.png)
+![Acetate Studio entry workspace and statement composer](./new-chat.png)
 
 ### Charts · preview
 
-![Acetate Studio dashboard with illustrative charts](./home.png)
+Illustrative data: spending split and monthly cash forecast.
+
+![Spending split and monthly cash forecast](./home.png)
 
 <details>
-<summary>Spending flow and wealth projection</summary>
+<summary>Daily spending, recurring costs, spending flow, and investment setup</summary>
 
-![Spending flow and illustrative wealth projection](assets/chart-details.jpg)
+![Daily spending and recurring cost changes with illustrative data](assets/spending.png)
+
+![Spending flow and investment projection setup with illustrative data](assets/chart-details.png)
 
 </details>
+
+### Imported statements
+
+![Imported statements and review status](assets/statements.png)
+
+### Transaction inspection
+
+![Uploaded transaction inspection with categories and amounts](assets/transactions.png)
 
 ## Engineering highlights
 
