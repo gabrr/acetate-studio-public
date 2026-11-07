@@ -1,0 +1,465 @@
+{
+  "title": "Classification Services",
+  "board": {
+    "width": 1450,
+    "height": 910
+  },
+  "nodes": [
+    {
+      "id": "browser",
+      "kind": "data",
+      "x": 150,
+      "y": 110,
+      "title": "Studio browser",
+      "subtitle": "User-facing client",
+      "description": "Studio retains the job ID and displays progress. Production service design; local development substitutes local storage and queue adapters.",
+      "input": "PDF / CSV + Supabase access token",
+      "output": "POST /api/jobs",
+      "data": {
+        "file": "sample.csv",
+        "headers": {
+          "Authorization": "Bearer <user-access-token>",
+          "Idempotency-Key": "sample-submit-1"
+        }
+      },
+      "note": "Fictional examples. This diagram makes no network or AI calls.",
+      "narration": "Studio retains the job ID and displays progress. Production service design; local development substitutes local storage and queue adapters."
+    },
+    {
+      "id": "api",
+      "kind": "tool",
+      "x": 480,
+      "y": 110,
+      "title": "FastAPI",
+      "subtitle": "Cloud Run \u00b7 user API",
+      "description": "Verify bearer identity, validate the upload and orchestrate job creation. Studio calls the configured classifier API directly.",
+      "input": "Authenticated upload",
+      "output": "Validated file + verified owner",
+      "data": {
+        "method": "POST",
+        "path": "/api/jobs",
+        "owner_id": "user-example",
+        "response_status": 202
+      },
+      "note": "The API, processing, maintenance and SSE are responsibilities within one deployed Cloud Run service, not four separate services.",
+      "narration": "Verify bearer identity, validate the upload and orchestrate job creation. Studio calls the configured classifier API directly."
+    },
+    {
+      "id": "storage",
+      "kind": "data",
+      "x": 810,
+      "y": 110,
+      "title": "Cloud Storage",
+      "subtitle": "Private input objects",
+      "description": "Store the uploaded statement as an immutable private object. Processing reads the persisted generation.",
+      "input": "Validated file bytes",
+      "output": "Object name + generation",
+      "data": {
+        "bucket": "example-private-inputs",
+        "object": "uploads/example/sample.csv",
+        "generation": "123456",
+        "public": false
+      },
+      "note": "File upload and database commit are separate operations; uncertain commits retain objects that may be referenced.",
+      "narration": "Store the uploaded statement as an immutable private object. Processing reads the persisted generation."
+    },
+    {
+      "id": "repository",
+      "kind": "tool",
+      "x": 1140,
+      "y": 110,
+      "title": "Job repository",
+      "subtitle": "Python \u00b7 PostgreSQL access",
+      "description": "Persist and query owner-scoped jobs through application code. The repository is not a cloud service or queue.",
+      "input": "Verified owner + object reference",
+      "output": "Durable job, event + enqueue intent",
+      "data": {
+        "owner_id": "user-example",
+        "job_id": "job-example",
+        "status": "queued",
+        "outbox": "pending"
+      },
+      "note": "Job service orchestrates storage and queue calls; repository code handles persistence.",
+      "narration": "Persist and query owner-scoped jobs through application code. The repository is not a cloud service or queue."
+    },
+    {
+      "id": "postgres",
+      "kind": "data",
+      "x": 1140,
+      "y": 330,
+      "title": "PostgreSQL",
+      "subtitle": "Supabase \u00b7 durable records",
+      "description": "Store profiles, jobs, attempts, outbox intents, checkpoints, ordered events and results.",
+      "input": "Committed application records",
+      "output": "Durable state + recovery information",
+      "data": {
+        "job_id": "job-example",
+        "status": "queued",
+        "event": {
+          "sequence": 1,
+          "event_type": "job_queued",
+          "data": {}
+        },
+        "outbox": "pending"
+      },
+      "note": "",
+      "narration": "Store profiles, jobs, attempts, outbox intents, checkpoints, ordered events and results."
+    },
+    {
+      "id": "tasks",
+      "kind": "tool",
+      "x": 810,
+      "y": 330,
+      "title": "Cloud Tasks",
+      "subtitle": "Google Cloud \u00b7 delivery",
+      "description": "Create a named task from the durable outbox. Queue retries and rate controls deliver processing independently of the browser.",
+      "input": "Persisted dispatch intent",
+      "output": "Authenticated processing request",
+      "data": {
+        "target": "/internal/process",
+        "body": {
+          "job_id": "job-example"
+        },
+        "identity": "configured task caller",
+        "audience": "BACKEND_URL"
+      },
+      "note": "Dispatch failures leave recoverable outbox work. Cloud Tasks does not guarantee execution order.",
+      "narration": "Create a named task from the durable outbox. Queue retries and rate controls deliver processing independently of the browser."
+    },
+    {
+      "id": "processor",
+      "kind": "tool",
+      "x": 480,
+      "y": 330,
+      "title": "Processing handler",
+      "subtitle": "Cloud Run \u00b7 same service",
+      "description": "Verify the Google caller, claim a fenced attempt and retrieve the stored input.",
+      "input": "POST /internal/process + job_id",
+      "output": "Claimed input for workflow",
+      "data": {
+        "job_id": "job-example",
+        "attempt": "attempt-example",
+        "status": "running",
+        "on_success": 204
+      },
+      "note": "Duplicate active deliveries can receive 409; completed jobs are not classified again.",
+      "narration": "Verify the Google caller, claim a fenced attempt and retrieve the stored input."
+    },
+    {
+      "id": "prepare",
+      "kind": "tool",
+      "x": 150,
+      "y": 330,
+      "title": "Prepare statement",
+      "subtitle": "In-container \u00b7 PDF / CSV",
+      "description": "Convert PDFs through the reusable CPU Docling child process; CSV uses UTF-8 decoding.",
+      "input": "Private PDF or CSV bytes",
+      "output": "Prepared statement text",
+      "data": {
+        "input": "sample.csv",
+        "adapter": "UTF-8 decode",
+        "text": "date,description,amount\n2026-10-01,Example market,-42.00"
+      },
+      "note": "Docling is an in-container child process, not a separate hosted service.",
+      "narration": "Convert PDFs through the reusable CPU Docling child process; CSV uses UTF-8 decoding."
+    },
+    {
+      "id": "gemini",
+      "kind": "ai",
+      "x": 150,
+      "y": 550,
+      "title": "Gemini",
+      "subtitle": "Hosted API \u00b7 extraction",
+      "description": "Extract typed statement fields and transaction rows from prepared text.",
+      "input": "Prepared text + schema",
+      "output": "Structured transactions",
+      "data": {
+        "statement": {
+          "currency": "BRL"
+        },
+        "transactions": [
+          {
+            "date": "2026-10-01",
+            "description": "Example market",
+            "amount": -42
+          }
+        ]
+      },
+      "note": "Paid AI call. Example output is illustrative.",
+      "narration": "Extract typed statement fields and transaction rows from prepared text."
+    },
+    {
+      "id": "jev",
+      "kind": "ai",
+      "x": 480,
+      "y": 550,
+      "title": "TypeSafe Jev",
+      "subtitle": "Hosted API \u00b7 classification",
+      "description": "Classify the extracted transactions using the workflow criteria.",
+      "input": "Transactions + classification criteria",
+      "output": "Classified transactions",
+      "data": {
+        "transactions": [
+          {
+            "description": "Example market",
+            "amount": -42,
+            "category": "variable"
+          }
+        ]
+      },
+      "note": "Paid intelligence. Classification stage progress is not per-token streaming.",
+      "narration": "Classify the extracted transactions using the workflow criteria."
+    },
+    {
+      "id": "commit",
+      "kind": "tool",
+      "x": 810,
+      "y": 550,
+      "title": "Save outcome",
+      "subtitle": "Cloud Run \u2192 PostgreSQL",
+      "description": "Commit terminal job state, result and ordered event. Checkpoints preserve compatible completed stages.",
+      "input": "Fenced attempt + classified result",
+      "output": "Saved result + terminal event",
+      "data": {
+        "job_id": "job-example",
+        "status": "succeeded",
+        "event": {
+          "sequence": 13,
+          "event_type": "result",
+          "data": {
+            "transactions": [
+              {
+                "description": "Example market",
+                "category": "variable"
+              }
+            ]
+          }
+        }
+      },
+      "note": "Database writes are protected against stale attempts.",
+      "narration": "Commit terminal job state, result and ordered event. Checkpoints preserve compatible completed stages."
+    },
+    {
+      "id": "listener",
+      "kind": "tool",
+      "x": 1140,
+      "y": 550,
+      "title": "Event listener",
+      "subtitle": "Cloud Run \u00b7 LISTEN + replay",
+      "description": "One listener connection per backend process reads durable events after each subscriber cursor. PostgreSQL NOTIFY only signals that history changed.",
+      "input": "job_updates signal + saved sequence",
+      "output": "Ordered saved events",
+      "data": {
+        "channel": "job_updates",
+        "notification": "job-example",
+        "read_after_sequence": 12,
+        "delivered_sequence": 13
+      },
+      "note": "Registration/replay share a lock. Reconnect catches up from PostgreSQL; notifications are not the event history.",
+      "narration": "One listener connection per backend process reads durable events after each subscriber cursor. PostgreSQL NOTIFY only signals that history changed."
+    },
+    {
+      "id": "scheduler",
+      "kind": "tool",
+      "x": 150,
+      "y": 770,
+      "title": "Cloud Scheduler",
+      "subtitle": "Google Cloud \u00b7 maintenance",
+      "description": "Invoke maintenance with its own Google service identity, including when the service has scaled to zero.",
+      "input": "Scheduled Google OIDC request",
+      "output": "POST /internal/maintenance",
+      "data": {
+        "target": "/internal/maintenance",
+        "identity": "configured maintenance caller"
+      },
+      "note": "",
+      "narration": "Invoke maintenance with its own Google service identity, including when the service has scaled to zero."
+    },
+    {
+      "id": "maintenance",
+      "kind": "tool",
+      "x": 480,
+      "y": 770,
+      "title": "Maintenance",
+      "subtitle": "Cloud Run \u00b7 same service",
+      "description": "Recover stalled work, reconcile dispatch intents and finalize exhausted jobs according to persisted deadlines.",
+      "input": "Authorized maintenance invocation",
+      "output": "Recovered / finalized jobs",
+      "data": {
+        "operations": [
+          "reconcile pending dispatch",
+          "recover stalled attempts",
+          "finalize exhausted jobs"
+        ]
+      },
+      "note": "Maintenance has a distinct allowed caller from processing.",
+      "narration": "Recover stalled work, reconcile dispatch intents and finalize exhausted jobs according to persisted deadlines."
+    },
+    {
+      "id": "sse",
+      "kind": "tool",
+      "x": 1140,
+      "y": 770,
+      "title": "Authenticated SSE",
+      "subtitle": "Cloud Run \u2192 browser",
+      "description": "Authorize the job owner and stream ordered events. Resume after the last event the browser applied.",
+      "input": "Bearer token + job ID + cursor",
+      "output": "SSE event frames",
+      "data": {
+        "request": "GET /api/jobs/job-example/events",
+        "headers": {
+          "Last-Event-ID": "12"
+        },
+        "frame": {
+          "id": "13",
+          "event": "result",
+          "data": {
+            "transactions": []
+          }
+        }
+      },
+      "note": "Heartbeat comments keep the connection alive. Closing the browser does not cancel the durable job.",
+      "narration": "Authorize the job owner and stream ordered events. Resume after the last event the browser applied."
+    },
+    {
+      "id": "display",
+      "kind": "output",
+      "x": 810,
+      "y": 770,
+      "title": "Progress & results",
+      "subtitle": "Studio browser",
+      "description": "Apply events and then retain the cursor. Terminal result/error closes the stream; a refreshed client needs replay or persisted state.",
+      "input": "SSE replay / live events",
+      "output": "Visible status and results",
+      "data": {
+        "job_id": "job-example",
+        "last_applied_sequence": 13,
+        "status": "succeeded"
+      },
+      "note": "",
+      "narration": "Apply events and then retain the cursor. Terminal result/error closes the stream; a refreshed client needs replay or persisted state."
+    }
+  ],
+  "edges": [
+    {
+      "from": "browser",
+      "to": "api"
+    },
+    {
+      "from": "api",
+      "to": "storage"
+    },
+    {
+      "from": "storage",
+      "to": "repository"
+    },
+    {
+      "from": "repository",
+      "to": "postgres"
+    },
+    {
+      "from": "postgres",
+      "to": "tasks"
+    },
+    {
+      "from": "tasks",
+      "to": "processor"
+    },
+    {
+      "from": "processor",
+      "to": "prepare"
+    },
+    {
+      "from": "prepare",
+      "to": "gemini"
+    },
+    {
+      "from": "gemini",
+      "to": "jev"
+    },
+    {
+      "from": "jev",
+      "to": "commit"
+    },
+    {
+      "from": "commit",
+      "to": "listener"
+    },
+    {
+      "from": "listener",
+      "to": "sse"
+    },
+    {
+      "from": "sse",
+      "to": "display"
+    },
+    {
+      "from": "scheduler",
+      "to": "maintenance"
+    },
+    {
+      "from": "postgres",
+      "to": "listener",
+      "kind": "payload",
+      "sourcePort": "right",
+      "targetPort": "right",
+      "via": [
+        [
+          1340,
+          330
+        ],
+        [
+          1340,
+          550
+        ]
+      ],
+      "label": "Saved history",
+      "labelX": 1340,
+      "labelY": 430
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "submit",
+      "label": "Submit",
+      "path": [
+        "browser",
+        "api",
+        "storage",
+        "repository",
+        "postgres",
+        "tasks"
+      ]
+    },
+    {
+      "id": "process",
+      "label": "Process",
+      "path": [
+        "tasks",
+        "processor",
+        "prepare",
+        "gemini",
+        "jev",
+        "commit"
+      ]
+    },
+    {
+      "id": "stream",
+      "label": "Live updates",
+      "path": [
+        "commit",
+        "listener",
+        "sse",
+        "display"
+      ]
+    },
+    {
+      "id": "maintain",
+      "label": "Maintenance",
+      "path": [
+        "scheduler",
+        "maintenance"
+      ]
+    }
+  ]
+}

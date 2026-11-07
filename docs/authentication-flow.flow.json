@@ -1,0 +1,397 @@
+{
+  "title": "Authentication Flow",
+  "board": {
+    "width": 1530,
+    "height": 950
+  },
+  "nodes": [
+    {
+      "id": "browser",
+      "kind": "data",
+      "x": 150,
+      "y": 100,
+      "title": "Studio browser",
+      "subtitle": "Supabase client session",
+      "description": "Google sign-in is mediated by Supabase Auth. The browser SDK manages user sessions.",
+      "input": "Sign-in intent",
+      "output": "Supabase authentication request",
+      "data": {
+        "provider": "google",
+        "client": "Supabase SDK"
+      },
+      "note": "Illustrative identity and requests; no sign-in is performed here.",
+      "narration": "Google sign-in is mediated by Supabase Auth. The browser SDK manages user sessions."
+    },
+    {
+      "id": "supabase",
+      "kind": "tool",
+      "x": 470,
+      "y": 100,
+      "title": "Supabase Auth",
+      "subtitle": "Identity provider",
+      "description": "Return a user access token after sign-in. Backend stores no user access tokens or custom login sessions.",
+      "input": "Successful provider sign-in",
+      "output": "Signed access token",
+      "data": {
+        "access_token": "<redacted example>",
+        "token_type": "bearer",
+        "user_id": "user-example"
+      },
+      "note": "",
+      "narration": "Return a user access token after sign-in. Backend stores no user access tokens or custom login sessions."
+    },
+    {
+      "id": "request",
+      "kind": "data",
+      "x": 790,
+      "y": 100,
+      "title": "API request",
+      "subtitle": "Browser \u2192 FastAPI",
+      "description": "Send the Supabase access token in the Authorization header, including authenticated fetch-based SSE.",
+      "input": "Access token + job ID",
+      "output": "Bearer-authenticated request",
+      "data": {
+        "method": "GET",
+        "path": "/api/jobs/job-example",
+        "headers": {
+          "Authorization": "Bearer <access-token>"
+        }
+      },
+      "note": "",
+      "narration": "Send the Supabase access token in the Authorization header, including authenticated fetch-based SSE."
+    },
+    {
+      "id": "verify",
+      "kind": "rule",
+      "x": 1110,
+      "y": 100,
+      "title": "Verify user token",
+      "subtitle": "FastAPI \u00b7 Supabase adapter",
+      "description": "SDK get_claims verifies signature and expiry; adapter checks issuer, audience, role and user ID.",
+      "input": "Supabase access token",
+      "output": "Verified user or 401",
+      "data": {
+        "checks": [
+          "signature",
+          "expiry",
+          "project issuer",
+          "audience",
+          "authenticated role",
+          "user ID"
+        ]
+      },
+      "note": "SDK caches asymmetric keys; legacy symmetric tokens use Auth-server validation. Provider outages/configuration failures return 503.",
+      "narration": "SDK get_claims verifies signature and expiry; adapter checks issuer, audience, role and user ID."
+    },
+    {
+      "id": "unauth",
+      "kind": "error",
+      "x": 1360,
+      "y": 300,
+      "title": "401 \u00b7 Sign in",
+      "subtitle": "Invalid / expired token",
+      "description": "Reject missing, forged, wrong-project or expired user tokens.",
+      "input": "Rejected user credential",
+      "output": "HTTP 401",
+      "data": {
+        "status": 401,
+        "detail": "Sign in required"
+      },
+      "note": "An open SSE stream periodically checks expiry and closes with session_expired. Logout does not instantly invalidate an issued token.",
+      "narration": "Reject missing, forged, wrong-project or expired user tokens."
+    },
+    {
+      "id": "owner",
+      "kind": "rule",
+      "x": 1110,
+      "y": 340,
+      "title": "Check job owner",
+      "subtitle": "FastAPI \u2192 repository",
+      "description": "Use the verified identity to scope job queries. A browser-supplied owner ID is never trusted.",
+      "input": "Verified user ID + requested job",
+      "output": "Owned record or 404",
+      "data": {
+        "verified_user": "user-example",
+        "job_id": "job-example",
+        "predicate": "job.owner_id = verified_user.id"
+      },
+      "note": "The direct postgres connection does not automatically apply per-user RLS; application ownership checks remain necessary.",
+      "narration": "Use the verified identity to scope job queries. A browser-supplied owner ID is never trusted."
+    },
+    {
+      "id": "missing",
+      "kind": "error",
+      "x": 1360,
+      "y": 550,
+      "title": "404 \u00b7 Unavailable",
+      "subtitle": "Missing or another owner",
+      "description": "Return the same not-found response for absent jobs and jobs owned by somebody else.",
+      "input": "Failed ownership lookup",
+      "output": "HTTP 404",
+      "data": {
+        "status": 404,
+        "detail": "Job not found"
+      },
+      "note": "",
+      "narration": "Return the same not-found response for absent jobs and jobs owned by somebody else."
+    },
+    {
+      "id": "access",
+      "kind": "output",
+      "x": 790,
+      "y": 340,
+      "title": "Own job access",
+      "subtitle": "Status \u00b7 result \u00b7 events \u00b7 retry",
+      "description": "Return only owned records. Ownership also protects stream replay and user mutations.",
+      "input": "Verified user + owned record",
+      "output": "Authorized API response",
+      "data": {
+        "job_id": "job-example",
+        "owner_id": "user-example",
+        "status": "succeeded"
+      },
+      "note": "",
+      "narration": "Return only owned records. Ownership also protects stream replay and user mutations."
+    },
+    {
+      "id": "tasks",
+      "kind": "data",
+      "x": 150,
+      "y": 580,
+      "title": "Cloud Tasks",
+      "subtitle": "Processing caller",
+      "description": "Cloud Tasks attaches a Google OIDC identity token for the configured task service account.",
+      "input": "Durable processing task",
+      "output": "POST /internal/process",
+      "data": {
+        "body": {
+          "job_id": "job-example"
+        },
+        "caller": "TASK_CALLER_EMAIL",
+        "audience": "BACKEND_URL"
+      },
+      "note": "",
+      "narration": "Cloud Tasks attaches a Google OIDC identity token for the configured task service account."
+    },
+    {
+      "id": "scheduler",
+      "kind": "data",
+      "x": 150,
+      "y": 810,
+      "title": "Cloud Scheduler",
+      "subtitle": "Maintenance caller",
+      "description": "Scheduler attaches a Google identity token for a separate maintenance service account.",
+      "input": "Scheduled maintenance",
+      "output": "POST /internal/maintenance",
+      "data": {
+        "caller": "MAINTENANCE_CALLER_EMAIL",
+        "audience": "BACKEND_URL"
+      },
+      "note": "",
+      "narration": "Scheduler attaches a Google identity token for a separate maintenance service account."
+    },
+    {
+      "id": "google",
+      "kind": "rule",
+      "x": 470,
+      "y": 580,
+      "title": "Verify Google token",
+      "subtitle": "FastAPI \u00b7 internal guard",
+      "description": "Verify Google signature, issuer, expiry, audience and verified email. Cloud Run transport is public; the application enforces route-level authentication.",
+      "input": "Google service identity token",
+      "output": "Verified service identity",
+      "data": {
+        "checks": [
+          "Google signature",
+          "issuer",
+          "expiry",
+          "audience = BACKEND_URL",
+          "verified email"
+        ]
+      },
+      "note": "Supabase user tokens and task headers alone cannot authorize internal endpoints.",
+      "narration": "Verify Google signature, issuer, expiry, audience and verified email. Cloud Run transport is public; the application enforces route-level authentication."
+    },
+    {
+      "id": "caller",
+      "kind": "rule",
+      "x": 790,
+      "y": 580,
+      "title": "Match allowed caller",
+      "subtitle": "Processing / maintenance",
+      "description": "Require the exact caller email configured for the requested route. Processing and maintenance use different identities.",
+      "input": "Verified service email + route",
+      "output": "Authorized caller or 403",
+      "data": {
+        "/internal/process": "TASK_CALLER_EMAIL",
+        "/internal/maintenance": "MAINTENANCE_CALLER_EMAIL"
+      },
+      "note": "",
+      "narration": "Require the exact caller email configured for the requested route. Processing and maintenance use different identities."
+    },
+    {
+      "id": "handler",
+      "kind": "output",
+      "x": 1110,
+      "y": 580,
+      "title": "Run internal handler",
+      "subtitle": "Cloud Run \u00b7 same backend",
+      "description": "Run the job processor or maintenance only after the route-specific identity checks pass.",
+      "input": "Authorized service request",
+      "output": "Processing or maintenance response",
+      "data": {
+        "route": "/internal/process",
+        "authorized": true,
+        "completed_response_status": 204
+      },
+      "note": "",
+      "narration": "Run the job processor or maintenance only after the route-specific identity checks pass."
+    },
+    {
+      "id": "forbidden",
+      "kind": "error",
+      "x": 790,
+      "y": 810,
+      "title": "403 \u00b7 Wrong caller",
+      "subtitle": "Valid token \u00b7 disallowed identity",
+      "description": "A valid Google identity is insufficient if its email does not match this route.",
+      "input": "Wrong service caller",
+      "output": "HTTP 403",
+      "data": {
+        "status": 403,
+        "detail": "Service caller not authorized"
+      },
+      "note": "Missing/invalid service tokens return 401; unavailable verifier/configuration returns 503.",
+      "narration": "A valid Google identity is insufficient if its email does not match this route."
+    }
+  ],
+  "edges": [
+    {
+      "from": "browser",
+      "to": "supabase"
+    },
+    {
+      "from": "supabase",
+      "to": "request"
+    },
+    {
+      "from": "request",
+      "to": "verify"
+    },
+    {
+      "from": "verify",
+      "to": "owner"
+    },
+    {
+      "from": "verify",
+      "to": "unauth"
+    },
+    {
+      "from": "owner",
+      "to": "access"
+    },
+    {
+      "from": "owner",
+      "to": "missing"
+    },
+    {
+      "from": "tasks",
+      "to": "google"
+    },
+    {
+      "from": "scheduler",
+      "to": "google"
+    },
+    {
+      "from": "google",
+      "to": "caller"
+    },
+    {
+      "from": "caller",
+      "to": "handler"
+    },
+    {
+      "from": "caller",
+      "to": "forbidden"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "user",
+      "label": "User access",
+      "path": [
+        "browser",
+        "supabase",
+        "request",
+        "verify",
+        "owner",
+        "access"
+      ]
+    },
+    {
+      "id": "expired",
+      "label": "Invalid token",
+      "path": [
+        "browser",
+        "supabase",
+        "request",
+        "verify",
+        "unauth"
+      ]
+    },
+    {
+      "id": "other",
+      "label": "Wrong owner",
+      "path": [
+        "request",
+        "verify",
+        "owner",
+        "missing"
+      ],
+      "data": {
+        "owner": {
+          "verified_user": "user-example",
+          "record_owner": "another-user",
+          "decision": "return 404"
+        }
+      }
+    },
+    {
+      "id": "processing",
+      "label": "Task caller",
+      "path": [
+        "tasks",
+        "google",
+        "caller",
+        "handler"
+      ]
+    },
+    {
+      "id": "maintenance",
+      "label": "Maintenance caller",
+      "path": [
+        "scheduler",
+        "google",
+        "caller",
+        "handler"
+      ],
+      "data": {
+        "handler": {
+          "route": "/internal/maintenance",
+          "authorized": true,
+          "response": "maintenance summary"
+        }
+      }
+    },
+    {
+      "id": "wrongcaller",
+      "label": "Wrong caller",
+      "path": [
+        "tasks",
+        "google",
+        "caller",
+        "forbidden"
+      ]
+    }
+  ]
+}

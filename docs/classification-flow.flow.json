@@ -1,0 +1,2172 @@
+{
+  "title": "Acetate · Classification and corrections · Proposal",
+  "board": {
+    "width": 2580,
+    "height": 1600,
+    "scale": 1
+  },
+  "readyText": "Classification and memory remain the workflow. Quality view adds linked request/job traces, reviewed regression cases and frozen replay comparisons.",
+  "nodes": [
+    {
+      "id": "file",
+      "x": 120,
+      "y": 94,
+      "kind": "data",
+      "title": "Statement file",
+      "subtitle": "PDF or CSV",
+      "input": "Upload",
+      "output": "File bytes",
+      "description": "The original statement.",
+      "data": {
+        "filename": "statement.pdf",
+        "format": "pdf"
+      },
+      "note": "Proposal. All examples are fictional.",
+      "narration": "The original statement."
+    },
+    {
+      "id": "convert",
+      "x": 340,
+      "y": 94,
+      "kind": "tool",
+      "title": "Read file as text",
+      "subtitle": "Docling / CSV reader",
+      "input": "File bytes",
+      "output": "Plain text",
+      "description": "PDF conversion or CSV decoding. No paid model call in this step.",
+      "data": {
+        "text": "OPENAI 20.00\nOPENAI 20.00\nPARK*ZONE 5.00\nPARK*ZONE 8.00\nPARK*ZONE 4.00"
+      },
+      "note": "Proposal. PDF uses Docling; CSV is decoded directly.",
+      "narration": "PDF conversion or CSV decoding. No paid model call in this step."
+    },
+    {
+      "id": "text",
+      "x": 560,
+      "y": 94,
+      "kind": "data",
+      "title": "Statement text",
+      "subtitle": "Unstructured",
+      "input": "Conversion",
+      "output": "Statement text",
+      "description": "The text Gemini will read.",
+      "data": {
+        "text": "2026-09-01 OPENAI USD 20.00\n2026-10-01 OPENAI USD 20.00\n2026-10-02 PARK*ZONE USD 5.00\n2026-10-03 PARK*ZONE USD 8.00\n2026-10-04 PARK*ZONE USD 4.00"
+      },
+      "note": "Proposal. No classification yet.",
+      "narration": "The text Gemini will read."
+    },
+    {
+      "id": "gemini",
+      "x": 780,
+      "y": 94,
+      "kind": "ai",
+      "title": "Gemini",
+      "subtitle": "Extract · paid AI",
+      "input": "Statement text",
+      "output": "Structured transactions",
+      "description": "Extracts fields such as description, amount and date.",
+      "data": {
+        "transactions": {
+          "$ref": "transactions"
+        }
+      },
+      "note": "Proposal. Gemini structures the data. Jev classifies it.",
+      "narration": "Extracts fields such as description, amount and date."
+    },
+    {
+      "id": "full",
+      "x": 1000,
+      "y": 94,
+      "kind": "data",
+      "title": "All transactions",
+      "subtitle": "5 rows · preserved",
+      "input": "Gemini output",
+      "output": "Full transaction list",
+      "description": "This complete list goes into BOTH Jev calls.",
+      "data": {
+        "transactions": {
+          "$ref": "transactions"
+        }
+      },
+      "note": "Proposal. Grouping does not delete, merge or replace these rows.",
+      "narration": "This complete list goes into BOTH Jev calls."
+    },
+    {
+      "id": "group1",
+      "x": 1000,
+      "y": 274,
+      "kind": "tool",
+      "title": "Group similar transactions",
+      "subtitle": "Preserve payment differences",
+      "input": "5 transactions",
+      "output": "2 lookup groups",
+      "description": "Group compatible lookup requests while preserving each original transaction and its payment details.",
+      "data": {
+        "full_transaction_ids": [
+          "t1",
+          "t2",
+          "t3",
+          "t4",
+          "t5"
+        ],
+        "lookup_groups": {
+          "$ref": "groups"
+        }
+      },
+      "note": "Same merchant does not imply the same purpose or report bucket. Keep subscription and API-credit payments distinct when known; retain unknown row details instead of assuming equivalence. Grouping never deletes payments or broadcasts one correction to every row.",
+      "narration": "Group compatible lookup requests while preserving each original transaction and its payment details."
+    },
+    {
+      "id": "compact1",
+      "x": 780,
+      "y": 274,
+      "kind": "data",
+      "title": "Compact lookup groups",
+      "subtitle": "2 groups → 5 row IDs",
+      "input": "Grouping",
+      "output": "Lookup requests + mapping",
+      "description": "Each group retains its original transaction IDs.",
+      "data": {
+        "lookup_groups": {
+          "$ref": "groups"
+        }
+      },
+      "note": "Proposal. This compact data is for retrieval, not a replacement for the full list.",
+      "narration": "Each group retains its original transaction IDs."
+    },
+    {
+      "id": "retrieve",
+      "x": 560,
+      "y": 274,
+      "kind": "tool",
+      "title": "Retrieve relevant context",
+      "subtitle": "Private corrections + shared web",
+      "input": "Grouped transactions + two memory scopes",
+      "output": "Applicable evidence with sources",
+      "description": "Search this user’s active corrections and shared public merchant knowledge separately. Merge only evidence applicable to the original transaction.",
+      "data": {
+        "query_groups": {
+          "$ref": "groups"
+        },
+        "private_search": {
+          "owner_id": "user-01",
+          "field": "report_bucket",
+          "status": "active"
+        },
+        "shared_search": {
+          "scope": "shared_public",
+          "merchant_identity": "resolved match",
+          "freshness": "not expired",
+          "status": "active"
+        },
+        "search": [
+          "Exact matching",
+          "Semantic similarity",
+          "Applicability per original row"
+        ],
+        "no_applicable_match": [],
+        "returned_context": {
+          "$ref": "context"
+        }
+      },
+      "note": "Use exact + semantic matching and per-row relevance checks. Private correction search always filters owner + field; shared search accepts public scope only. Exclude superseded corrections and expired web facts. Keep provenance and distinguish personal decisions from public business facts. No match gives empty context; search failure is separate.",
+      "narration": "Search this user’s active corrections and shared public merchant knowledge separately. Merge only evidence applicable to the original transaction."
+    },
+    {
+      "id": "context",
+      "x": 340,
+      "y": 274,
+      "kind": "data",
+      "title": "Relevant context",
+      "subtitle": "Evidence + row mapping",
+      "input": "Retrieval",
+      "output": "Context for Jev",
+      "description": "Attach useful evidence to the right transactions.",
+      "data": {
+        "$ref": "context"
+      },
+      "note": "Proposal. Personal examples are evidence, not unconditional merchant rules.",
+      "narration": "Attach useful evidence to the right transactions."
+    },
+    {
+      "id": "jev1",
+      "x": 340,
+      "y": 454,
+      "kind": "ai",
+      "title": "Jev · first pass",
+      "subtitle": "Classify · paid AI",
+      "input": "ALL rows + context",
+      "output": "Per-row classification",
+      "description": "Classifies every original transaction using the retrieved context.",
+      "data": {
+        "transactions": {
+          "$ref": "transactions"
+        },
+        "context": {
+          "$ref": "context"
+        },
+        "output": [
+          {
+            "id": "t1",
+            "report_bucket": "fixed",
+            "confidence": 0.96
+          },
+          {
+            "id": "t2",
+            "report_bucket": "fixed",
+            "confidence": 0.96
+          },
+          {
+            "id": "t3",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          },
+          {
+            "id": "t4",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          },
+          {
+            "id": "t5",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          }
+        ]
+      },
+      "note": "Proposal. Five inputs → five answers. Jev is TypeSafe’s typed decision model.",
+      "narration": "Classifies every original transaction using the retrieved context."
+    },
+    {
+      "id": "answers",
+      "x": 560,
+      "y": 454,
+      "kind": "data",
+      "title": "Initial answers",
+      "subtitle": "5 categories + confidence",
+      "input": "Jev first pass",
+      "output": "Per-row results",
+      "description": "Each original transaction has its own answer.",
+      "data": {
+        "answers": [
+          {
+            "id": "t1",
+            "report_bucket": "fixed",
+            "confidence": 0.96
+          },
+          {
+            "id": "t2",
+            "report_bucket": "fixed",
+            "confidence": 0.96
+          },
+          {
+            "id": "t3",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          },
+          {
+            "id": "t4",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          },
+          {
+            "id": "t5",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          }
+        ]
+      },
+      "note": "Proposal. Confidence values are simulated, not measured accuracy.",
+      "narration": "Each original transaction has its own answer."
+    },
+    {
+      "id": "gate",
+      "x": 780,
+      "y": 454,
+      "kind": "rule",
+      "title": "Check confidence",
+      "subtitle": "Code · threshold 0.80",
+      "input": "Initial answers",
+      "output": "Ready or low-confidence IDs",
+      "description": "No extra AI call: compare each confidence to the threshold.",
+      "data": {
+        "threshold": 0.8,
+        "low_confidence_ids": [
+          "t3",
+          "t4",
+          "t5"
+        ],
+        "route": "research",
+        "confidence_policy": "Illustrative 0.80, not validated accuracy. Calibrate on held-out reviewed transactions by dimension/model.",
+        "research_limits": {
+          "max_research_rounds": 1,
+          "max_second_passes": 1
+        },
+        "when_research_fails": "Keep available answers, label unresolved; surface systemic processing failures separately.",
+        "quality_checks": {
+          "labels": "Held-out user-reviewed examples, isolated from tuning",
+          "grouping": "Do not merge payments or remove rows",
+          "retrieval": "Measure relevance and correction conflicts before adding vectors",
+          "model_changes": "Re-evaluate confidence thresholds after model or criteria changes"
+        }
+      },
+      "note": "Proposal. 0.80 is an example policy, not a chosen production threshold.",
+      "narration": "No extra AI call: compare each confidence to the threshold."
+    },
+    {
+      "id": "direct",
+      "x": 1000,
+      "y": 454,
+      "kind": "output",
+      "title": "Show results",
+      "subtitle": "No research needed",
+      "input": "Initial answers",
+      "output": "5 visible transactions",
+      "description": "The first pass passes the example threshold. Result assembly reads the latest manual values, checks source versions and exact row IDs, and keeps model proposals separate from effective user values.",
+      "data": {
+        "display_order": "confidence_ascending",
+        "transactions": [
+          {
+            "id": "t3",
+            "description": "PARK*ZONE",
+            "date": "2026-10-02",
+            "amount": "5.00",
+            "currency": "USD",
+            "report_bucket": "variable",
+            "confidence": 0.62,
+            "needs_review": true
+          },
+          {
+            "id": "t4",
+            "description": "PARK*ZONE",
+            "date": "2026-10-03",
+            "amount": "8.00",
+            "currency": "USD",
+            "report_bucket": "variable",
+            "confidence": 0.62,
+            "needs_review": true
+          },
+          {
+            "id": "t5",
+            "description": "PARK*ZONE",
+            "date": "2026-10-04",
+            "amount": "4.00",
+            "currency": "USD",
+            "report_bucket": "variable",
+            "confidence": 0.62,
+            "needs_review": true
+          },
+          {
+            "id": "t1",
+            "description": "OPENAI",
+            "date": "2026-09-01",
+            "amount": "20.00",
+            "currency": "USD",
+            "report_bucket": "fixed",
+            "confidence": 0.96,
+            "needs_review": false
+          },
+          {
+            "id": "t2",
+            "description": "OPENAI",
+            "date": "2026-10-01",
+            "amount": "20.00",
+            "currency": "USD",
+            "report_bucket": "fixed",
+            "confidence": 0.96,
+            "needs_review": false
+          }
+        ]
+      },
+      "note": "Proposal. Skip the research branch. High confidence is not a correctness guarantee. Do not present model confidence as confidence in a manual override. Final display sorts unresolved rows first; no additional low-confidence branch.",
+      "narration": "The first pass passes the example threshold."
+    },
+    {
+      "id": "low",
+      "x": 780,
+      "y": 634,
+      "kind": "data",
+      "title": "Low-confidence subset",
+      "subtitle": "3 rows · t3, t4, t5",
+      "input": "Confidence check",
+      "output": "Rows needing context",
+      "description": "Only this subset drives research requests.",
+      "data": {
+        "transactions": [
+          {
+            "id": "t3",
+            "description": "PARK*ZONE",
+            "date": "2026-10-02",
+            "amount": "5.00",
+            "currency": "USD"
+          },
+          {
+            "id": "t4",
+            "description": "PARK*ZONE",
+            "date": "2026-10-03",
+            "amount": "8.00",
+            "currency": "USD"
+          },
+          {
+            "id": "t5",
+            "description": "PARK*ZONE",
+            "date": "2026-10-04",
+            "amount": "4.00",
+            "currency": "USD"
+          }
+        ],
+        "initial_answers": [
+          {
+            "id": "t3",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          },
+          {
+            "id": "t4",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          },
+          {
+            "id": "t5",
+            "report_bucket": "variable",
+            "confidence": 0.62
+          }
+        ]
+      },
+      "note": "Proposal. The complete five-row list remains available separately.",
+      "narration": "Only this subset drives research requests."
+    },
+    {
+      "id": "group2",
+      "x": 560,
+      "y": 634,
+      "kind": "tool",
+      "title": "Group similar transactions",
+      "subtitle": "Preserve payment differences",
+      "input": "3 uncertain rows",
+      "output": "1 research group",
+      "description": "Group compatible lookup requests while preserving each original transaction and its payment details.",
+      "data": {
+        "lookup_groups": [
+          {
+            "group_id": "g2",
+            "merchant": "PARK*ZONE",
+            "transaction_ids": [
+              "t3",
+              "t4",
+              "t5"
+            ]
+          }
+        ]
+      },
+      "note": "Same merchant does not imply the same purpose or report bucket. Keep subscription and API-credit payments distinct when known; retain unknown row details instead of assuming equivalence. Grouping never deletes payments or broadcasts one correction to every row.",
+      "narration": "Group compatible lookup requests while preserving each original transaction and its payment details."
+    },
+    {
+      "id": "compact2",
+      "x": 340,
+      "y": 634,
+      "kind": "data",
+      "title": "Compact research request",
+      "subtitle": "1 group → 3 row IDs",
+      "input": "Grouping",
+      "output": "Public research query",
+      "description": "Only the public query goes to the web agent; row mapping stays local.",
+      "data": {
+        "local_mapping": {
+          "g2": [
+            "t3",
+            "t4",
+            "t5"
+          ]
+        },
+        "public_query": {
+          "merchant": "PARK*ZONE",
+          "question": "Identify the merchant and its business activity."
+        }
+      },
+      "note": "Proposal. Do not send user identity, card details, dates, amounts or the full statement to web research.",
+      "narration": "Only the public query goes to the web agent; row mapping stays local."
+    },
+    {
+      "id": "research",
+      "x": 340,
+      "y": 814,
+      "kind": "agent",
+      "title": "Web research agent",
+      "subtitle": "AI + web tools · paid",
+      "input": "Public merchant query",
+      "output": "Cited merchant facts",
+      "description": "An agent searches the web and checks source relevance.",
+      "data": {
+        "$ref": "webEvidence",
+        "no_useful_new_evidence": "Retain first-pass answers, set enrichment_status=unresolved, skip a redundant second paid call."
+      },
+      "note": "Proposal. Provider is undecided. Web facts cannot prove a user’s payment arrangement. Cache public facts with source time and merchant identity. Treat pages as untrusted data. Timeout/cost limits; no statement or user reasons in public queries.",
+      "narration": "An agent searches the web and checks source relevance."
+    },
+    {
+      "id": "webcontext",
+      "x": 780,
+      "y": 814,
+      "kind": "data",
+      "title": "Additional context",
+      "subtitle": "Citations + row mapping",
+      "input": "Prepare additional context",
+      "output": "New relevant evidence",
+      "description": "Transaction-linked additional context prepared for Jev.",
+      "data": {
+        "existing_context": {
+          "$ref": "context"
+        },
+        "web_context": {
+          "$ref": "webEvidence"
+        }
+      },
+      "note": "Proposal. The .example URL is a fictional illustration. No live lookup occurred.",
+      "narration": "Pass the relevant additional context to Jev."
+    },
+    {
+      "id": "jev2",
+      "x": 1000,
+      "y": 814,
+      "kind": "ai",
+      "title": "Jev · second pass",
+      "subtitle": "Classify again · paid AI",
+      "input": "ALL rows + both contexts",
+      "output": "5 updated answers",
+      "description": "As requested: send the full list again, plus earlier and new context.",
+      "data": {
+        "transactions": {
+          "$ref": "transactions"
+        },
+        "context": {
+          "personal": {
+            "$ref": "context"
+          },
+          "web": {
+            "$ref": "webEvidence"
+          }
+        },
+        "output": [
+          {
+            "id": "t1",
+            "report_bucket": "fixed",
+            "confidence": 0.96
+          },
+          {
+            "id": "t2",
+            "report_bucket": "fixed",
+            "confidence": 0.96
+          },
+          {
+            "id": "t3",
+            "report_bucket": "variable",
+            "confidence": 0.64
+          },
+          {
+            "id": "t4",
+            "report_bucket": "variable",
+            "confidence": 0.73
+          },
+          {
+            "id": "t5",
+            "report_bucket": "variable",
+            "confidence": 0.92
+          }
+        ]
+      },
+      "note": "Proposal. One second pass only. Results display the lowest-confidence rows first. Preserve full row IDs and counts. A newer user override wins even if this run started before the edit.",
+      "narration": "As requested: send the full list again, plus earlier and new context."
+    },
+    {
+      "id": "final",
+      "x": 1220,
+      "y": 814,
+      "kind": "output",
+      "title": "Show results",
+      "subtitle": "5 classified transactions",
+      "input": "Second-pass answers",
+      "output": "5 visible transactions",
+      "description": "Display all transactions, ordered from lowest to highest confidence. Result assembly reads the latest manual values, checks source versions and exact row IDs, and keeps model proposals separate from effective user values.",
+      "data": {
+        "display_order": "confidence_ascending",
+        "transactions": [
+          {
+            "id": "t3",
+            "description": "PARK*ZONE",
+            "date": "2026-10-02",
+            "amount": "5.00",
+            "currency": "USD",
+            "report_bucket": "variable",
+            "confidence": 0.64,
+            "needs_review": true
+          },
+          {
+            "id": "t4",
+            "description": "PARK*ZONE",
+            "date": "2026-10-03",
+            "amount": "8.00",
+            "currency": "USD",
+            "report_bucket": "variable",
+            "confidence": 0.73,
+            "needs_review": true
+          },
+          {
+            "id": "t5",
+            "description": "PARK*ZONE",
+            "date": "2026-10-04",
+            "amount": "4.00",
+            "currency": "USD",
+            "report_bucket": "variable",
+            "confidence": 0.92,
+            "needs_review": false
+          },
+          {
+            "id": "t1",
+            "description": "OPENAI",
+            "date": "2026-09-01",
+            "amount": "20.00",
+            "currency": "USD",
+            "report_bucket": "fixed",
+            "confidence": 0.96,
+            "needs_review": false
+          },
+          {
+            "id": "t2",
+            "description": "OPENAI",
+            "date": "2026-10-01",
+            "amount": "20.00",
+            "currency": "USD",
+            "report_bucket": "fixed",
+            "confidence": 0.96,
+            "needs_review": false
+          }
+        ]
+      },
+      "note": "Proposal. Low-confidence rows appear first so the user can evaluate them first. No separate review branch. Do not present model confidence as confidence in a manual override. Final display sorts unresolved rows first; no additional low-confidence branch.",
+      "narration": "Display all transactions, ordered from lowest to highest confidence."
+    },
+    {
+      "id": "command",
+      "x": 1740,
+      "y": 94,
+      "kind": "data",
+      "title": "Report bucket changed",
+      "subtitle": "Fixed → variable",
+      "description": "The update function receives one payload, from either UI or chat.",
+      "data": {
+        "$ref": "correction"
+      },
+      "input": "UI or chat",
+      "output": "Change payload",
+      "note": "The diagram starts at the function call. User identity is resolved from the authenticated request; the shown name is an example.",
+      "narration": "The update function receives one payload, from either UI or chat."
+    },
+    {
+      "id": "api",
+      "x": 1740,
+      "y": 274,
+      "kind": "tool",
+      "title": "FastAPI · update endpoint",
+      "subtitle": "Correct bucket + record change",
+      "description": "Update the existing transaction and save its correction history together in PostgreSQL. Then index the correction for retrieval.",
+      "data": {
+        "method": "POST",
+        "route": "/transactions/t1/update (proposed)",
+        "body": {
+          "$ref": "correction"
+        },
+        "steps": [
+          "Update existing report_bucket and insert correction history in one PostgreSQL commit",
+          "Embed the saved correction and upsert its vector record"
+        ]
+      },
+      "input": "Change payload",
+      "output": "Updated bucket + durable correction",
+      "note": "Proposed endpoint. No new transaction is created. Before/after values are checked against the stored transaction; identity comes from the authenticated request. A missing reason remains null.",
+      "narration": "Update the existing transaction and save its correction history together in PostgreSQL. Then index the correction for retrieval."
+    },
+    {
+      "id": "database",
+      "x": 1740,
+      "y": 454,
+      "kind": "data",
+      "title": "PostgreSQL",
+      "subtitle": "Updated bucket + correction history",
+      "description": "Correct the existing report bucket and retain who changed it, before/after values and reason in the same commit.",
+      "data": {
+        "update_existing": {
+          "transaction_id": "t1",
+          "report_bucket": "variable"
+        },
+        "insert_correction": {
+          "$ref": "correction"
+        },
+        "indexing": {
+          "correction_id": "correction-18",
+          "status": "pending",
+          "job_id": "index-correction-18",
+          "request_id": "req-correction-18",
+          "request_trace_id": "trace-correction-18"
+        },
+        "commit": "Update and correction history succeed or roll back together"
+      },
+      "input": "Existing transaction + correction",
+      "output": "Updated bucket + saved correction",
+      "note": "PostgreSQL is the durable source. Store pending indexing state with the correction so a failed vector write can be retried and memory rebuilt.",
+      "narration": "Correct the existing report bucket and retain who changed it, before/after values and reason in the same commit."
+    },
+    {
+      "id": "index",
+      "x": 2160,
+      "y": 454,
+      "kind": "tool",
+      "title": "Embed + store correction",
+      "subtitle": "One correction = one record",
+      "description": "Embed the saved correction and upsert one vector record using its correction ID.",
+      "data": {
+        "record_id": "correction-18",
+        "input": {
+          "$ref": "correction"
+        },
+        "output": {
+          "$ref": "correctionRecord"
+        },
+        "source": "Saved PostgreSQL correction",
+        "on_failure": "Leave indexing pending; retry same correction_id",
+        "trace_link": {
+          "request_id": "req-correction-18",
+          "request_trace_id": "trace-correction-18",
+          "job_id": "index-correction-18",
+          "worker_trace_id": "trace-worker-18",
+          "correction_id": "correction-18",
+          "source_classification_trace_id": "trace-request-01"
+        }
+      },
+      "input": "Saved correction from PostgreSQL",
+      "output": "One vector record",
+      "note": "No splitting. An embedding model is used; provider undecided. Retry pending corrections using the same ID, then mark indexed. A failed vector write does not erase the transaction correction. Indexing has its own worker trace linked to the original request by job_id, request_id and correction_id; do not assume automatic cross-process nesting.",
+      "narration": "Embed the saved correction and upsert one vector record using its correction ID."
+    },
+    {
+      "id": "memory",
+      "x": 2160,
+      "y": 674,
+      "kind": "data",
+      "title": "Private correction memory",
+      "subtitle": "This user only",
+      "description": "Keep the correction together for later retrieval.",
+      "data": {
+        "$ref": "correctionRecord"
+      },
+      "input": "One embedded correction",
+      "output": "Relevant past corrections",
+      "note": "Derived retrieval index; rebuild from PostgreSQL correction history. Exclude undone or superseded corrections. Owner isolation is enforced in retrieval; implementation remains outside this diagram.",
+      "narration": "Keep the correction together for later retrieval."
+    },
+    {
+      "id": "index_web",
+      "x": 1840,
+      "y": 874,
+      "kind": "tool",
+      "title": "Embed + store web context",
+      "subtitle": "Save · embed · upsert",
+      "description": "Save the accepted public fact durably, then embed and upsert it in shared vector memory.",
+      "narration": "Save the accepted public fact durably, then embed and upsert it in shared vector memory.",
+      "data": {
+        "durable_record": {
+          "$ref": "sharedWebFact"
+        },
+        "vector_record": {
+          "$ref": "sharedWebRecord"
+        },
+        "dedup_key": [
+          "resolved merchant ID",
+          "payment type",
+          "normalized fact"
+        ],
+        "on_failure": "Keep pending indexing state; retry without duplicating the fact",
+        "trace_link": {
+          "request_id": "req-demo-01",
+          "request_trace_id": "trace-request-01",
+          "job_id": "index-web-01",
+          "worker_trace_id": "trace-worker-web-01",
+          "knowledge_id": "web-parking-01"
+        }
+      },
+      "input": "Public output from Prepare additional context",
+      "output": "One shared vector record",
+      "note": "Use the same indexing mechanism as corrections, with a separate public scope. Persist the local transaction-to-knowledge link privately. Failed shared indexing must not block current classification. Link this background job to the originating classification trace with safe IDs. Record pending age, attempts and final state separately from classification quality."
+    },
+    {
+      "id": "shared_memory",
+      "x": 2240,
+      "y": 874,
+      "kind": "data",
+      "title": "Shared web knowledge",
+      "subtitle": "Public facts · reusable by everyone",
+      "description": "Reuse sourced merchant facts from previous research across users.",
+      "narration": "Reuse sourced merchant facts from previous research across users.",
+      "data": {
+        "$ref": "sharedWebRecord"
+      },
+      "input": "Accepted indexed fact",
+      "output": "Public context for future runs",
+      "note": "Logical collection in the vector database; not necessarily another database service. Revalidate expired facts; exclude stale or revoked records. Public merchant facts never override personal corrections or prove how a particular user pays."
+    },
+    {
+      "id": "prepare_context",
+      "x": 560,
+      "y": 814,
+      "kind": "tool",
+      "title": "Prepare additional context",
+      "subtitle": "For Jev + shared memory",
+      "description": "Receive the web finding, check relevance and merchant identity, then prepare two outputs: transaction-linked context for Jev and public knowledge for embedding.",
+      "input": "Web findings + local transaction mapping",
+      "output": "Context for Jev + public embedding payload",
+      "data": {
+        "for_jev": {
+          "existing_context": {
+            "$ref": "context"
+          },
+          "additional_context": {
+            "$ref": "webEvidence"
+          }
+        },
+        "for_embedding": {
+          "$ref": "sharedWebFact"
+        },
+        "local_only": {
+          "group_id": "g2",
+          "transaction_ids": [
+            "t3",
+            "t4",
+            "t5"
+          ],
+          "knowledge_id": "web-parking-01"
+        }
+      },
+      "note": "One function fans out to both consumers. Share only supported public facts; keep transaction links private. Reject ambiguous or irrelevant facts from shared storage. A failed embedding write must not block the context sent to Jev.",
+      "narration": "Prepare context for Jev and send the public portion for embedding."
+    },
+    {
+      "id": "trace_runs",
+      "x": 260,
+      "y": 1180,
+      "kind": "data",
+      "title": "LangSmith traces",
+      "subtitle": "Request + linked indexing jobs",
+      "description": "Observe the classification request and correlate its background indexing traces.",
+      "narration": "Observe the classification request and correlate its background indexing traces.",
+      "data": {
+        "$ref": "requestAndJobTraces"
+      },
+      "input": "Safe step summaries + job links",
+      "output": "Trace evidence for diagnosis",
+      "note": "Proposal extending the existing Jev trace. One root covers the request; workers use separate traces linked by trusted safe IDs or explicit context propagation. Sanitize all traced layers, metadata and errors. Traces explain execution, not correctness. Instrument every request exit, including first-pass results and failures. The correction API request is a separate root; link its worker to that request, with optional lineage to the earlier classification."
+    },
+    {
+      "id": "monitor_runs",
+      "x": 740,
+      "y": 1180,
+      "kind": "tool",
+      "title": "Monitor + flag runs",
+      "subtitle": "Errors · latency · indexing lag",
+      "description": "Observe operational health and score a sample of captured traces for possible quality problems.",
+      "narration": "Observe operational health and score a sample of captured traces for possible quality problems.",
+      "data": {
+        "trace_capture": "Configured independently from evaluator sampling",
+        "online_checks": [
+          "Schema and row-count checks",
+          "Approved-content applicability / judge checks when content is available"
+        ],
+        "operational_metrics": [
+          "errors",
+          "p95 latency",
+          "pending-index age",
+          "failed indexing jobs"
+        ],
+        "review_selection": "Flag suspicious runs and review a random sample of ordinary successes",
+        "not_measured": "Judge pass rate is not classification accuracy"
+      },
+      "input": "Captured traces + application metrics",
+      "output": "Potential issues for review",
+      "note": "Application metrics cover traffic not captured by tracing. Fully hidden content cannot support semantic online judging; use approved redacted content or structural checks. Keep evaluator cost/sampling and alert thresholds configurable."
+    },
+    {
+      "id": "human_review",
+      "x": 1220,
+      "y": 1180,
+      "kind": "human",
+      "title": "Review the reference",
+      "subtitle": "Confirm · sanitize · approve",
+      "description": "Check the transaction and reason, establish the owner-specific reference, and approve a safe example.",
+      "narration": "Check the transaction and reason, establish the owner-specific reference, and approve a safe example.",
+      "data": {
+        "$ref": "reviewedCase"
+      },
+      "input": "Flagged or sampled run",
+      "output": "Approved reference case",
+      "note": "A user correction is not automatically universal ground truth. Confirm the appropriate reference and permission to retain the example. Rejected or unresolved cases are not promoted."
+    },
+    {
+      "id": "regression_set",
+      "x": 1700,
+      "y": 1180,
+      "kind": "data",
+      "title": "Reviewed regression set",
+      "subtitle": "Case + reference + prior evidence",
+      "description": "Keep reviewed failures as repeatable tests for the next pipeline change.",
+      "narration": "Keep reviewed failures as repeatable tests for the next pipeline change.",
+      "data": {
+        "dataset_id": "acetate-regression-v2",
+        "example": {
+          "$ref": "reviewedCase"
+        },
+        "holdout": "Separate untouched evaluation set, not repeatedly tuned on"
+      },
+      "input": "Approved safe case",
+      "output": "Versioned regression examples",
+      "note": "Keep reference labels distinct from retrieval memory. Do not insert the target answer into its own replay corpus. Separate development regression cases from the final holdout."
+    },
+    {
+      "id": "frozen_snapshot",
+      "x": 2180,
+      "y": 1180,
+      "kind": "data",
+      "title": "Frozen test world",
+      "subtitle": "Dataset + memory + versions",
+      "description": "Pin the inputs, references, prior memory, source fixtures and model configuration used by both compared versions.",
+      "narration": "Pin the inputs, references, prior memory, source fixtures and model configuration used by both compared versions.",
+      "data": {
+        "$ref": "evaluationSnapshot"
+      },
+      "input": "Versioned cases + prior evidence",
+      "output": "Enforced repeatable replay snapshot",
+      "note": "Declaring a snapshot in trace metadata does not enforce it. The evaluation target must actually retrieve from the frozen store and suppress live memory writes. Use earlier user memory for later-user personalization; test cold starts separately."
+    },
+    {
+      "id": "offline_compare",
+      "x": 1700,
+      "y": 1440,
+      "kind": "tool",
+      "title": "Compare pipeline versions",
+      "subtitle": "Baseline ↔ candidate",
+      "description": "Run baseline and candidate on the same frozen cases and check both quality and operational limits.",
+      "narration": "Run baseline and candidate on the same frozen cases and check both quality and operational limits.",
+      "data": {
+        "snapshot": {
+          "$ref": "evaluationSnapshot"
+        },
+        "workflow": "Original classification workflow, run in isolated evaluation mode",
+        "checks": [
+          "Exact bucket correctness against reviewed references",
+          "Per-bucket accuracy and review coverage",
+          "Correct-evidence retrieval and irrelevant context",
+          "Cross-owner exclusion and manual override preservation",
+          "Retry/idempotency failure tests",
+          "Latency and provider-reported cost"
+        ],
+        "comparison": "Inspect improvements and regressions, not only aggregate score"
+      },
+      "input": "Frozen snapshot + two versions",
+      "output": "Comparison report",
+      "note": "Use code evaluators for exact buckets, reviewed rubrics for semantic checks. A no-memory baseline measures whether retrieval helps. Representative cases and uncertainty matter; synthetic examples are not production benchmarks."
+    },
+    {
+      "id": "candidate_report",
+      "x": 1220,
+      "y": 1440,
+      "kind": "output",
+      "title": "Candidate decision",
+      "subtitle": "Inspect regressions before rollout",
+      "description": "Use the comparison report to revise the candidate or approve a controlled rollout under agreed gates.",
+      "narration": "Use the comparison report to revise the candidate or approve a controlled rollout under agreed gates.",
+      "data": {
+        "status": "example report; no deployment action",
+        "gates": [
+          "No cross-owner access",
+          "No lost corrections or duplicate indexing records",
+          "Agreed quality and per-bucket regression limits",
+          "Agreed latency/cost limits"
+        ],
+        "on_failure": "Keep current version; revise candidate and replay the same frozen snapshot",
+        "on_pass": "Human-approved controlled rollout; observe new runs and repeat the review loop"
+      },
+      "input": "Measured comparison + review",
+      "output": "Keep baseline or approve candidate",
+      "note": "Proposed release policy, not an automatic deployment step. No single LangSmith score certifies production readiness."
+    }
+  ],
+  "edges": [
+    {
+      "from": "file",
+      "to": "convert"
+    },
+    {
+      "from": "convert",
+      "to": "text"
+    },
+    {
+      "from": "text",
+      "to": "gemini"
+    },
+    {
+      "from": "gemini",
+      "to": "full"
+    },
+    {
+      "from": "full",
+      "to": "group1"
+    },
+    {
+      "from": "group1",
+      "to": "compact1"
+    },
+    {
+      "from": "compact1",
+      "to": "retrieve"
+    },
+    {
+      "from": "retrieve",
+      "to": "context"
+    },
+    {
+      "from": "context",
+      "to": "jev1"
+    },
+    {
+      "from": "jev1",
+      "to": "answers"
+    },
+    {
+      "from": "answers",
+      "to": "gate"
+    },
+    {
+      "from": "gate",
+      "to": "direct"
+    },
+    {
+      "from": "gate",
+      "to": "low"
+    },
+    {
+      "from": "low",
+      "to": "group2"
+    },
+    {
+      "from": "group2",
+      "to": "compact2"
+    },
+    {
+      "from": "compact2",
+      "to": "research"
+    },
+    {
+      "from": "webcontext",
+      "to": "jev2"
+    },
+    {
+      "from": "jev2",
+      "to": "final"
+    },
+    {
+      "from": "full",
+      "to": "jev1",
+      "kind": "payload",
+      "label": "ALL 5 rows",
+      "labelX": 970,
+      "labelY": 360,
+      "sourcePort": "right",
+      "targetPort": "top",
+      "via": [
+        [
+          1135,
+          94
+        ],
+        [
+          1135,
+          374
+        ],
+        [
+          340,
+          374
+        ]
+      ]
+    },
+    {
+      "from": "full",
+      "to": "jev2",
+      "kind": "payload",
+      "label": "ALL 5 rows",
+      "labelX": 1005,
+      "labelY": 705,
+      "sourcePort": "right",
+      "targetPort": "top",
+      "via": [
+        [
+          1155,
+          94
+        ],
+        [
+          1155,
+          720
+        ],
+        [
+          1000,
+          720
+        ]
+      ]
+    },
+    {
+      "from": "context",
+      "to": "jev2",
+      "kind": "payload",
+      "label": "Earlier context",
+      "labelX": 380,
+      "labelY": 717,
+      "sourcePort": "left",
+      "targetPort": "left",
+      "via": [
+        [
+          210,
+          274
+        ],
+        [
+          210,
+          730
+        ],
+        [
+          880,
+          730
+        ],
+        [
+          880,
+          814
+        ]
+      ]
+    },
+    {
+      "from": "command",
+      "to": "api"
+    },
+    {
+      "from": "api",
+      "to": "database"
+    },
+    {
+      "from": "database",
+      "to": "index",
+      "label": "Saved correction",
+      "labelX": 1880,
+      "labelY": 440
+    },
+    {
+      "from": "index",
+      "to": "memory"
+    },
+    {
+      "from": "memory",
+      "to": "retrieve",
+      "kind": "payload",
+      "sourcePort": "right",
+      "targetPort": "top",
+      "via": [
+        [
+          2500,
+          674
+        ],
+        [
+          2500,
+          190
+        ],
+        [
+          560,
+          190
+        ]
+      ],
+      "label": "Past corrections",
+      "labelX": 1180,
+      "labelY": 176
+    },
+    {
+      "from": "index_web",
+      "to": "shared_memory"
+    },
+    {
+      "from": "shared_memory",
+      "to": "retrieve",
+      "kind": "payload",
+      "sourcePort": "right",
+      "targetPort": "top",
+      "via": [
+        [
+          2540,
+          874
+        ],
+        [
+          2540,
+          160
+        ],
+        [
+          560,
+          160
+        ]
+      ],
+      "label": "Public merchant facts",
+      "labelX": 1120,
+      "labelY": 146
+    },
+    {
+      "from": "research",
+      "to": "prepare_context"
+    },
+    {
+      "from": "prepare_context",
+      "to": "webcontext"
+    },
+    {
+      "from": "prepare_context",
+      "to": "index_web",
+      "sourcePort": "bottom",
+      "targetPort": "bottom",
+      "via": [
+        [
+          560,
+          950
+        ],
+        [
+          1840,
+          950
+        ]
+      ],
+      "label": "Public context → embed + store",
+      "labelX": 1330,
+      "labelY": 936
+    },
+    {
+      "from": "trace_runs",
+      "to": "monitor_runs"
+    },
+    {
+      "from": "monitor_runs",
+      "to": "human_review"
+    },
+    {
+      "from": "human_review",
+      "to": "regression_set"
+    },
+    {
+      "from": "regression_set",
+      "to": "frozen_snapshot"
+    },
+    {
+      "from": "frozen_snapshot",
+      "to": "offline_compare"
+    },
+    {
+      "from": "offline_compare",
+      "to": "candidate_report"
+    },
+    {
+      "from": "final",
+      "to": "trace_runs",
+      "kind": "payload",
+      "sourcePort": "bottom",
+      "targetPort": "top",
+      "via": [
+        [
+          1220,
+          1030
+        ],
+        [
+          260,
+          1030
+        ]
+      ]
+    },
+    {
+      "from": "index_web",
+      "to": "trace_runs",
+      "kind": "payload",
+      "sourcePort": "bottom",
+      "targetPort": "top",
+      "via": [
+        [
+          1840,
+          1045
+        ],
+        [
+          260,
+          1045
+        ]
+      ]
+    },
+    {
+      "from": "index",
+      "to": "trace_runs",
+      "kind": "payload",
+      "sourcePort": "right",
+      "targetPort": "top",
+      "via": [
+        [
+          2560,
+          454
+        ],
+        [
+          2560,
+          1060
+        ],
+        [
+          260,
+          1060
+        ]
+      ]
+    },
+    {
+      "from": "candidate_report",
+      "to": "offline_compare",
+      "sourcePort": "bottom",
+      "targetPort": "bottom",
+      "via": [
+        [
+          1220,
+          1540
+        ],
+        [
+          1700,
+          1540
+        ]
+      ],
+      "label": "Revise candidate · replay frozen snapshot",
+      "labelX": 1300,
+      "labelY": 1527
+    },
+    {
+      "from": "direct",
+      "to": "trace_runs",
+      "kind": "payload",
+      "sourcePort": "right",
+      "targetPort": "top",
+      "via": [
+        [
+          1320,
+          454
+        ],
+        [
+          1320,
+          1015
+        ],
+        [
+          260,
+          1015
+        ]
+      ]
+    }
+  ],
+  "labels": [
+    {
+      "x": 879,
+      "y": 437,
+      "text": "Ready"
+    },
+    {
+      "x": 800,
+      "y": 554,
+      "text": "Low"
+    },
+    {
+      "x": 30,
+      "y": 26,
+      "text": "CLASSIFICATION · PROPOSED ENRICHMENT"
+    },
+    {
+      "x": 1380,
+      "y": 26,
+      "text": "MEMORY · PRIVATE CORRECTIONS + PUBLIC WEB"
+    },
+    {
+      "x": 30,
+      "y": 1105,
+      "text": "QUALITY LOOP · PROPOSED · NO DEPLOYMENT ACTION"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "direct",
+      "label": "First pass",
+      "path": [
+        "file",
+        "convert",
+        "text",
+        "gemini",
+        "full",
+        "group1",
+        "compact1",
+        "retrieve",
+        "context",
+        "jev1",
+        "answers",
+        "gate",
+        "direct"
+      ],
+      "data": {
+        "jev1": {
+          "transactions": {
+            "$ref": "transactions"
+          },
+          "context": {
+            "$ref": "context"
+          },
+          "output": [
+            {
+              "id": "t1",
+              "report_bucket": "fixed",
+              "confidence": 0.96
+            },
+            {
+              "id": "t2",
+              "report_bucket": "fixed",
+              "confidence": 0.96
+            },
+            {
+              "id": "t3",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            },
+            {
+              "id": "t4",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            },
+            {
+              "id": "t5",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            }
+          ]
+        },
+        "answers": {
+          "answers": [
+            {
+              "id": "t1",
+              "report_bucket": "fixed",
+              "confidence": 0.96
+            },
+            {
+              "id": "t2",
+              "report_bucket": "fixed",
+              "confidence": 0.96
+            },
+            {
+              "id": "t3",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            },
+            {
+              "id": "t4",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            },
+            {
+              "id": "t5",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            }
+          ]
+        },
+        "gate": {
+          "threshold": 0.8,
+          "low_confidence_ids": [],
+          "route": "show_results"
+        },
+        "direct": {
+          "display_order": "confidence_ascending",
+          "transactions": [
+            {
+              "id": "t1",
+              "description": "OPENAI",
+              "date": "2026-09-01",
+              "amount": "20.00",
+              "currency": "USD",
+              "report_bucket": "fixed",
+              "confidence": 0.96,
+              "needs_review": false
+            },
+            {
+              "id": "t2",
+              "description": "OPENAI",
+              "date": "2026-10-01",
+              "amount": "20.00",
+              "currency": "USD",
+              "report_bucket": "fixed",
+              "confidence": 0.96,
+              "needs_review": false
+            },
+            {
+              "id": "t3",
+              "description": "PARK*ZONE",
+              "date": "2026-10-02",
+              "amount": "5.00",
+              "currency": "USD",
+              "report_bucket": "variable",
+              "confidence": 0.96,
+              "needs_review": false
+            },
+            {
+              "id": "t4",
+              "description": "PARK*ZONE",
+              "date": "2026-10-03",
+              "amount": "8.00",
+              "currency": "USD",
+              "report_bucket": "variable",
+              "confidence": 0.96,
+              "needs_review": false
+            },
+            {
+              "id": "t5",
+              "description": "PARK*ZONE",
+              "date": "2026-10-04",
+              "amount": "4.00",
+              "currency": "USD",
+              "report_bucket": "variable",
+              "confidence": 0.96,
+              "needs_review": false
+            }
+          ]
+        },
+        "low": {
+          "transactions": [
+            {
+              "id": "t3",
+              "description": "PARK*ZONE",
+              "date": "2026-10-02",
+              "amount": "5.00",
+              "currency": "USD"
+            },
+            {
+              "id": "t4",
+              "description": "PARK*ZONE",
+              "date": "2026-10-03",
+              "amount": "8.00",
+              "currency": "USD"
+            },
+            {
+              "id": "t5",
+              "description": "PARK*ZONE",
+              "date": "2026-10-04",
+              "amount": "4.00",
+              "currency": "USD"
+            }
+          ],
+          "initial_answers": [
+            {
+              "id": "t3",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            },
+            {
+              "id": "t4",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            },
+            {
+              "id": "t5",
+              "report_bucket": "variable",
+              "confidence": 0.96
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "resolved",
+      "label": "Web research",
+      "path": [
+        "file",
+        "convert",
+        "text",
+        "gemini",
+        "full",
+        "group1",
+        "compact1",
+        "retrieve",
+        "context",
+        "jev1",
+        "answers",
+        "gate",
+        "low",
+        "group2",
+        "compact2",
+        "research",
+        "prepare_context",
+        "webcontext",
+        "jev2",
+        "final"
+      ]
+    },
+    {
+      "id": "correction",
+      "label": "Save correction",
+      "view": "corrections",
+      "path": [
+        "command",
+        "api",
+        "database",
+        "index",
+        "memory"
+      ]
+    },
+    {
+      "id": "reuse",
+      "label": "Use correction",
+      "view": "both",
+      "path": [
+        "compact1",
+        "retrieve",
+        "context",
+        "jev1"
+      ],
+      "data": {
+        "retrieve": {
+          "query_groups": {
+            "$ref": "groups"
+          },
+          "matched_records": [
+            {
+              "$ref": "correctionRecord"
+            }
+          ],
+          "returned_context": {
+            "by_group": {
+              "g1": {
+                "source": "user_correction",
+                "record_id": "correction-18",
+                "example_transaction_id": "t1",
+                "changed_from": "fixed",
+                "changed_to": "variable",
+                "reason": "One-off API credits, not a monthly subscription."
+              },
+              "g2": null
+            },
+            "groups": {
+              "$ref": "groups"
+            }
+          },
+          "filters": {
+            "owner_id": "user-01",
+            "field": "report_bucket",
+            "status": "active"
+          },
+          "search": [
+            "Exact + semantic"
+          ],
+          "applicability": "One-off API-credit evidence; not a blanket subscription rule",
+          "no_applicable_match": []
+        },
+        "context": {
+          "by_group": {
+            "g1": {
+              "source": "user_correction",
+              "record_id": "correction-18",
+              "example_transaction_id": "t1",
+              "changed_from": "fixed",
+              "changed_to": "variable",
+              "reason": "One-off API credits, not a monthly subscription."
+            },
+            "g2": null
+          },
+          "groups": {
+            "$ref": "groups"
+          }
+        },
+        "jev1": {
+          "transactions": {
+            "$ref": "transactions"
+          },
+          "context": {
+            "by_group": {
+              "g1": {
+                "source": "user_correction",
+                "record_id": "correction-18",
+                "example_transaction_id": "t1",
+                "changed_from": "fixed",
+                "changed_to": "variable",
+                "reason": "One-off API credits, not a monthly subscription."
+              },
+              "g2": null
+            },
+            "groups": {
+              "$ref": "groups"
+            }
+          },
+          "task": "Classify each original transaction using the correction as contextual evidence."
+        }
+      }
+    },
+    {
+      "id": "remember_web",
+      "label": "Remember web fact",
+      "view": "both",
+      "path": [
+        "research",
+        "prepare_context",
+        "index_web",
+        "shared_memory"
+      ]
+    },
+    {
+      "id": "reuse_both",
+      "label": "Reuse both memories",
+      "view": "both",
+      "path": [
+        "compact1",
+        "retrieve",
+        "context",
+        "jev1"
+      ],
+      "data": {
+        "retrieve": {
+          "query_groups": {
+            "$ref": "groups"
+          },
+          "private_search": {
+            "owner_id": "user-01",
+            "field": "report_bucket"
+          },
+          "shared_search": {
+            "scope": "shared_public",
+            "freshness": "not expired"
+          },
+          "returned_context": {
+            "private_corrections": {
+              "$ref": "context"
+            },
+            "shared_web": [
+              {
+                "knowledge_id": "web-parking-01",
+                "applies_to_group": "g2",
+                "transaction_ids": [
+                  "t3",
+                  "t4",
+                  "t5"
+                ],
+                "fact": "The merchant provides pay-per-use street parking.",
+                "sources": [
+                  {
+                    "url": "https://parking.example/about",
+                    "excerpt": "Pay-per-use street parking."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "context": {
+          "private_corrections": {
+            "$ref": "context"
+          },
+          "shared_web": [
+            {
+              "knowledge_id": "web-parking-01",
+              "applies_to_group": "g2",
+              "transaction_ids": [
+                "t3",
+                "t4",
+                "t5"
+              ],
+              "fact": "The merchant provides pay-per-use street parking.",
+              "sources": [
+                {
+                  "url": "https://parking.example/about",
+                  "excerpt": "Pay-per-use street parking."
+                }
+              ]
+            }
+          ]
+        },
+        "jev1": {
+          "transactions": {
+            "$ref": "transactions"
+          },
+          "context": {
+            "private_corrections": {
+              "$ref": "context"
+            },
+            "shared_web": [
+              {
+                "knowledge_id": "web-parking-01",
+                "applies_to_group": "g2",
+                "transaction_ids": [
+                  "t3",
+                  "t4",
+                  "t5"
+                ],
+                "fact": "The merchant provides pay-per-use street parking.",
+                "sources": [
+                  {
+                    "url": "https://parking.example/about",
+                    "excerpt": "Pay-per-use street parking."
+                  }
+                ]
+              }
+            ]
+          },
+          "instruction": "Classify each original row. Public merchant facts and private corrections are evidence of different kinds."
+        }
+      }
+    },
+    {
+      "id": "quality_loop",
+      "label": "Observe → review → test",
+      "view": "quality",
+      "path": [
+        "trace_runs",
+        "monitor_runs",
+        "human_review",
+        "regression_set",
+        "frozen_snapshot",
+        "offline_compare",
+        "candidate_report"
+      ]
+    },
+    {
+      "id": "candidate_retry",
+      "label": "Revise + replay",
+      "view": "quality",
+      "path": [
+        "frozen_snapshot",
+        "offline_compare",
+        "candidate_report",
+        "offline_compare",
+        "candidate_report"
+      ]
+    }
+  ],
+  "samples": {
+    "transactions": [
+      {
+        "id": "t1",
+        "description": "OPENAI",
+        "date": "2026-09-01",
+        "amount": "20.00",
+        "currency": "USD"
+      },
+      {
+        "id": "t2",
+        "description": "OPENAI",
+        "date": "2026-10-01",
+        "amount": "20.00",
+        "currency": "USD"
+      },
+      {
+        "id": "t3",
+        "description": "PARK*ZONE",
+        "date": "2026-10-02",
+        "amount": "5.00",
+        "currency": "USD"
+      },
+      {
+        "id": "t4",
+        "description": "PARK*ZONE",
+        "date": "2026-10-03",
+        "amount": "8.00",
+        "currency": "USD"
+      },
+      {
+        "id": "t5",
+        "description": "PARK*ZONE",
+        "date": "2026-10-04",
+        "amount": "4.00",
+        "currency": "USD"
+      }
+    ],
+    "groups": [
+      {
+        "group_id": "g1",
+        "merchant": "OPENAI",
+        "transaction_ids": [
+          "t1",
+          "t2"
+        ],
+        "rows": [
+          {
+            "id": "t1",
+            "description": "OPENAI",
+            "date": "2026-09-01",
+            "amount": "20.00",
+            "currency": "USD"
+          },
+          {
+            "id": "t2",
+            "description": "OPENAI",
+            "date": "2026-10-01",
+            "amount": "20.00",
+            "currency": "USD"
+          }
+        ],
+        "reuse_policy": "Check applicability per original transaction; purpose may be unknown."
+      },
+      {
+        "group_id": "g2",
+        "merchant": "PARK*ZONE",
+        "transaction_ids": [
+          "t3",
+          "t4",
+          "t5"
+        ],
+        "rows": [
+          {
+            "id": "t3",
+            "description": "PARK*ZONE",
+            "date": "2026-10-02",
+            "amount": "5.00",
+            "currency": "USD"
+          },
+          {
+            "id": "t4",
+            "description": "PARK*ZONE",
+            "date": "2026-10-03",
+            "amount": "8.00",
+            "currency": "USD"
+          },
+          {
+            "id": "t5",
+            "description": "PARK*ZONE",
+            "date": "2026-10-04",
+            "amount": "4.00",
+            "currency": "USD"
+          }
+        ],
+        "reuse_policy": "Check applicability per original transaction; purpose may be unknown."
+      }
+    ],
+    "context": {
+      "by_group": {
+        "g1": {
+          "source": "user_correction",
+          "fact": "A similar subscription was corrected to fixed.",
+          "correction_id": "c17"
+        },
+        "g2": null
+      },
+      "groups": {
+        "$ref": "groups"
+      }
+    },
+    "webEvidence": {
+      "group_id": "g2",
+      "transaction_ids": [
+        "t3",
+        "t4",
+        "t5"
+      ],
+      "fact": "The merchant provides pay-per-use street parking.",
+      "sources": [
+        {
+          "url": "https://parking.example/about",
+          "excerpt": "Pay-per-use street parking."
+        }
+      ],
+      "demo": true
+    },
+    "correction": {
+      "correction_id": "correction-18",
+      "transaction_id": "t1",
+      "user": {
+        "id": "user-01",
+        "name": "Gabriel"
+      },
+      "transaction": {
+        "description": "OPENAI",
+        "date": "2026-09-01",
+        "amount": "20.00",
+        "currency": "USD"
+      },
+      "change": {
+        "field": "report_bucket",
+        "from": "fixed",
+        "to": "variable"
+      },
+      "reason": "One-off API credits, not a monthly subscription."
+    },
+    "correctionRecord": {
+      "id": "correction-18",
+      "text": "Gabriel changed OPENAI, USD 20.00 on 2026-09-01, from fixed to variable. Reason: One-off API credits, not a monthly subscription.",
+      "metadata": {
+        "owner_id": "user-01",
+        "transaction_id": "t1",
+        "field": "report_bucket",
+        "status": "active",
+        "version": 1
+      },
+      "payload": {
+        "$ref": "correction"
+      },
+      "embedding": "[generated numeric vector]"
+    },
+    "sharedWebFact": {
+      "id": "web-parking-01",
+      "scope": "shared_public",
+      "merchant": {
+        "id": "parking-demo",
+        "descriptor": "PARK*ZONE",
+        "payment_type": "street_parking"
+      },
+      "fact": "The merchant provides pay-per-use street parking.",
+      "sources": [
+        {
+          "url": "https://parking.example/about",
+          "excerpt": "Pay-per-use street parking."
+        }
+      ],
+      "checked_at": "2026-10-23",
+      "revalidate_after": "2026-11-23",
+      "status": "active",
+      "demo": true
+    },
+    "sharedWebRecord": {
+      "id": "web-parking-01",
+      "collection": "public_merchant_knowledge",
+      "text": "PARK*ZONE provides pay-per-use street parking.",
+      "metadata": {
+        "scope": "shared_public",
+        "merchant_id": "parking-demo",
+        "payment_type": "street_parking",
+        "status": "active",
+        "checked_at": "2026-10-23",
+        "revalidate_after": "2026-11-23"
+      },
+      "evidence": {
+        "$ref": "sharedWebFact"
+      },
+      "embedding": "[generated numeric vector]"
+    },
+    "evaluationSnapshot": {
+      "dataset": {
+        "id": "acetate-regression-v2",
+        "reference_revision": "labels-v2",
+        "cases": "Reviewed owner-specific inputs and references"
+      },
+      "memory": {
+        "id": "memory-m17",
+        "cutoff": "2026-11-01T00:00:00Z",
+        "enforcement": "Replay retrieval against this immutable snapshot; exclude each target correction and future evidence"
+      },
+      "versions": {
+        "model": "pinned-resolved-model-revision",
+        "prompt": "p4",
+        "embedding": "e1",
+        "retrieval": "r3",
+        "judge_rubric": "j2"
+      },
+      "live_writes": false,
+      "external_research": "Pinned source fixtures for repeatable replay; live-web drift tested separately",
+      "holdout": "Independent untouched owner/time-aware holdout for final checks",
+      "comparison_manifests": {
+        "baseline": {
+          "pipeline": "baseline-v1",
+          "memory_enabled": false,
+          "model": "pinned-resolved-model-revision",
+          "prompt": "p4",
+          "embedding": "e1",
+          "retrieval": "disabled"
+        },
+        "candidate": {
+          "pipeline": "candidate-v2",
+          "memory_enabled": true,
+          "model": "pinned-resolved-model-revision",
+          "prompt": "p4",
+          "embedding": "e1",
+          "retrieval": "r3"
+        }
+      }
+    },
+    "requestAndJobTraces": {
+      "classification": {
+        "trace_id": "trace-request-01",
+        "root": "classify_statement",
+        "children": [
+          "group_for_lookup",
+          "retrieve_context",
+          "jev_first_pass",
+          "web_research",
+          "prepare_context",
+          "jev_second_pass"
+        ],
+        "input_summary": {
+          "transaction_count": 5,
+          "raw_statement": "not logged"
+        },
+        "evidence_ids": [
+          "c17",
+          "web-parking-01"
+        ],
+        "exit_coverage": [
+          "First-pass success",
+          "Enriched second-pass success",
+          "No new web evidence",
+          "Errors and timeouts; trace the failed step even if results are not reached"
+        ]
+      },
+      "background_jobs": [
+        {
+          "request_id": "req-correction-18",
+          "request_trace_id": "trace-correction-18",
+          "job_id": "index-correction-18",
+          "worker_trace_id": "trace-worker-18",
+          "correction_id": "correction-18",
+          "source_classification_trace_id": "trace-request-01"
+        },
+        {
+          "request_id": "req-demo-01",
+          "request_trace_id": "trace-request-01",
+          "job_id": "index-web-01",
+          "worker_trace_id": "trace-worker-web-01",
+          "knowledge_id": "web-parking-01"
+        }
+      ],
+      "metadata_allowlist": [
+        "pipeline_revision",
+        "prompt_revision",
+        "model_revision",
+        "embedding_revision",
+        "retrieval_revision",
+        "safe_record_ids",
+        "job_id"
+      ],
+      "usage": "Record provider usage only when supplied; do not invent tokens or costs",
+      "correction_request": {
+        "trace_id": "trace-correction-18",
+        "request_id": "req-correction-18",
+        "root": "correct_report_bucket",
+        "source_classification_trace_id": "trace-request-01",
+        "children": [
+          "authorize_correction",
+          "update_and_record_history",
+          "enqueue_indexing"
+        ]
+      }
+    },
+    "reviewedCase": {
+      "source_trace_id": "trace-request-01",
+      "case_id": "case-demo-09",
+      "transaction_id": "synthetic-t9",
+      "reference": {
+        "owner": "synthetic-owner-01",
+        "field": "report_bucket",
+        "expected": "variable",
+        "reason": "One-off API credits"
+      },
+      "review": {
+        "reference_verified": true,
+        "approved_for_evaluation": true,
+        "sanitized": true
+      },
+      "memory_snapshot": "memory-m17",
+      "forbidden_leakage": "The correction establishing this expected answer is excluded from the replay memory."
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Acetate Studio
 
-[![Live demo](assets/live-demo.svg)](https://studio.acetate.me) [![In development](assets/development.svg)](#the-product) [![Interactive architecture](assets/architecture.svg)](https://gabrr.github.io/acetate-studio-public/classification.html)
+[![Live demo](assets/live-demo.svg)](https://studio.acetate.me) [![In development](assets/development.svg)](#the-product) [![Interactive architecture](assets/architecture.svg)](https://gabrr.github.io/acetate-studio-public/classification-flow.html#all)
 
 **A modern, AI-native personal finance application.**
 
@@ -29,6 +29,13 @@ Manual categorization takes time. Acetate’s AI workflow achieves **94% accurac
 
 ![Acetate Studio dashboard with illustrative charts](./home.png)
 
+<details>
+<summary>Spending flow and wealth projection</summary>
+
+![Spending flow and illustrative wealth projection](assets/chart-details.jpg)
+
+</details>
+
 ## Engineering highlights
 
 Designed and built across the interface, AI workflow, backend, and cloud infrastructure.
@@ -40,13 +47,15 @@ Designed and built across the interface, AI workflow, backend, and cloud infrast
 
 ## Architecture
 
-### Transaction classification
+### Workflow, memory & quality
 
-An illustrative classification flow, with proposed private correction memory and shared web knowledge. Example data and confidence values are simulated.
+Classification, private corrections, shared web knowledge and the proposed LangSmith review/evaluation loop. Example data is simulated; proposed stages are not claims of shipped features.
 
-[![Interactive Acetate transaction classification flow](docs/classification.png)](https://gabrr.github.io/acetate-studio-public/classification.html)
+[Open the complete interactive architecture](https://gabrr.github.io/acetate-studio-public/classification-flow.html#all)
 
-*Open the diagram to play flows, inspect example data, pan, and zoom.*
+[All diagrams](https://gabrr.github.io/acetate-studio-public/) · [Authentication](https://gabrr.github.io/acetate-studio-public/authentication-flow.html) · [RAG study guide](https://gabrr.github.io/acetate-studio-public/rag-study.html)
+
+*Zoom, inspect data, or focus on Classification, Memory, Quality and All.*
 
 ## Technology
 
